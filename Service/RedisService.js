@@ -36,9 +36,7 @@ var logCache = new ioRedis(
 
 RedisService.context = contextCache;
 RedisService.log = logCache;
-RedisService.stream = logCache.scanStream({
-
-    count : 10
-});
+RedisService.logStream = logCache.scanStream({ count : 10 });
+RedisService.contextStream = contextCache.scanStream({ count : 50 });
 
 module.exports = RedisService;

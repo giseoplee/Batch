@@ -3,14 +3,14 @@ var sequelize = require('./Service/SequelizeService.js');
 var entityService = require('./Service/EntityService.js');
 var log = require('./Entity/Log.js');
 var moment = require('moment');
-var child = require('child_process').fork('ChildCronJob.js');
-let bytesRead = 0;
+var rdbProcess = require('child_process').fork('./ChildCronJob.js');
+let rdbProcessBytesRead = 0;
 let exitFlag = 0;
 
 entityService.Init();
 console.log("[START TIME STAMP] "+moment().format("YYYY-MM-DD HH:mm:ss"));
 
-child.on("message", (data) => {
+rdbProcess.on("message", (data) => {
 
     redis.log.del(data.message).then((result) => {
 
@@ -29,11 +29,11 @@ child.on("message", (data) => {
     });
 });
 
-redis.stream.on('data', (resultKeys, error) => {
+redis.logStream.on('data', (resultKeys, error) => {
 
     if(resultKeys.length == 0){
 
-        child._channel.bytesRead++;
+        rdbProcess._channel.bytesRead++;
     }
 
     for (let i = 0; i < resultKeys.length; i++) {
@@ -42,30 +42,30 @@ redis.stream.on('data', (resultKeys, error) => {
 
             var jsonResult = JSON.parse(result);
             jsonResult.messageId = resultKeys[i];
-            child.send({"message" : jsonResult});
+            rdbProcess.send({"message" : jsonResult});
         });
     }
 });
 
 setInterval(() => {
 
-    if(child._channel.bytesRead != bytesRead){
+      if(rdbProcess._channel.bytesRead != rdbProcessBytesRead){
 
-        bytesRead = child._channel.bytesRead;
-    }
-    else{
+          rdbProcessBytesRead = rdbProcess._channel.bytesRead;
+      }
+      else{
 
-        if(exitFlag > 3){
+          if(exitFlag > 2){
 
-            console.log("[END TIME STAMP] "+moment().format("YYYY-MM-DD HH:mm:ss"));
-            sequelize.connectionManager.close();
-            child.kill("SIGINT");
-            process.exit();
-        }
-        else{
+              console.log("[END TIME STAMP] "+moment().format("YYYY-MM-DD HH:mm:ss"));
+              sequelize.connectionManager.close();
+              rdbProcess.kill("SIGINT");
+              process.exit();
+          }
+          else{
 
-            exitFlag++;
-            console.log("EXIT FLAG COUNT : "+exitFlag);
-        }
-    }
-}, 5000);
+              exitFlag++;
+              console.log("EXIT FLAG COUNT : "+exitFlag);
+          }
+      }
+}, 2000);
