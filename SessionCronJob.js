@@ -13,17 +13,11 @@ redis.contextStream.on('data', (resultKeys, error) => {
 
     for(let i = 0; i < resultKeys.length; i++){
 
-        console.log(resultKeys[i]);
         redis.context.get(resultKeys[i]).then((result) => {
 
             var currentTime = moment().valueOf()
             var jsonResult = JSON.parse(result);
             var expireTime = jsonResult.expires;
-
-            console.log("expire time");
-            console.log(moment(expireTime).format("YYYY-MM-DD HH:mm:ss"));
-            console.log("current time");
-            console.log(moment(currentTime).format("YYYY-MM-DD HH:mm:ss"));
 
             if(currentTime > expireTime){
 
@@ -36,8 +30,6 @@ redis.contextStream.on('data', (resultKeys, error) => {
                         console.log("[UNKNOWN SESSION DELETE ERROR] "+moment().format("YYYY-MM-DD HH:mm:ss")+"\n");
                     }
 
-                    console.log(i);
-                    console.log(resultKeys.length-1);
                     if(i == (resultKeys.length-1)){
 
                         console.log("[END TIME STAMP] "+moment().format("YYYY-MM-DD HH:mm:ss"));

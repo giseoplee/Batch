@@ -1,11 +1,13 @@
 var redis = require('./Service/RedisService.js');
 var sequelize = require('./Service/SequelizeService.js');
 var entityService = require('./Service/EntityService.js');
-var log = require('./Entity/Log.js');
+var config = require('./Common/Config.js');
 var moment = require('moment');
 var rdbProcess = require('child_process').fork('./ChildCronJob.js');
 let rdbProcessBytesRead = 0;
 let exitFlag = 0;
+let delCount = 0;
+let sendCount = 0;
 
 entityService.Init();
 console.log("[START TIME STAMP] "+moment().format("YYYY-MM-DD HH:mm:ss"));
@@ -36,20 +38,34 @@ redis.logStream.on('data', (resultKeys, error) => {
         rdbProcess._channel.bytesRead++;
     }
 
-    for (let i = 0; i < resultKeys.length; i++) {
+    if(sendCount < config.limitCount){
 
-        redis.log.get(resultKeys[i]).then(function(result) {
+        sendCount += resultKeys.length;
 
-            var jsonResult = JSON.parse(result);
-            jsonResult.messageId = resultKeys[i];
-            rdbProcess.send({"message" : jsonResult});
-        });
+        for (let i = 0; i < resultKeys.length; i++) {
+
+            redis.log.get(resultKeys[i]).then(function(result) {
+
+                var jsonResult = JSON.parse(result);
+                jsonResult.messageId = resultKeys[i];
+                rdbProcess.send({"message" : jsonResult});
+            });
+        }
     }
+});
+
+rdbProcess.on("exit", () => {
+
+    console.log("[PERFECT END TIME STAMP] "+moment().format("YYYY-MM-DD HH:mm:ss"));
+    sequelize.connectionManager.close();
+    //console.log(redis.log);
+    process.exit();
+
 });
 
 setInterval(() => {
 
-      if(rdbProcess._channel.bytesRead != rdbProcessBytesRead){
+      if(rdbProcess != null && rdbProcess._channel.bytesRead != rdbProcessBytesRead){
 
           rdbProcessBytesRead = rdbProcess._channel.bytesRead;
       }
@@ -57,7 +73,7 @@ setInterval(() => {
 
           if(exitFlag > 2){
 
-              console.log("[END TIME STAMP] "+moment().format("YYYY-MM-DD HH:mm:ss"));
+              console.log("[COMPULSION END TIME STAMP] "+moment().format("YYYY-MM-DD HH:mm:ss"));
               sequelize.connectionManager.close();
               rdbProcess.kill("SIGINT");
               process.exit();

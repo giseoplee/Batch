@@ -14,8 +14,8 @@ var contextCache = new ioRedis(
       db: 0,
 
       retryStrategy: (times) => {
-          var delay = Math.min(times * 2, 2000);
-          console.log(delay);
+          var delay = Math.min(times * 4, 4000);
+          console.log("## Context Cache Memory Connection Retry ##");
           return delay;
       }
 });
@@ -28,15 +28,15 @@ var logCache = new ioRedis(
     db: 1,
 
     retryStrategy: (times) => {
-        var delay = Math.min(times * 2, 2000);
-        console.log(delay);
+        var delay = Math.min(times * 4, 4000);
+        console.log("## Log Cache Memory Connection Retry ##");
         return delay;
     }
 });
 
 RedisService.context = contextCache;
 RedisService.log = logCache;
-RedisService.logStream = logCache.scanStream({ count : 10 });
-RedisService.contextStream = contextCache.scanStream({ count : 50 });
+RedisService.logStream = logCache.scanStream({ count : 1 });
+RedisService.contextStream = contextCache.scanStream({ count : 1 });
 
 module.exports = RedisService;

@@ -7,7 +7,7 @@ const sequelize = new Sequelize(config.storeConfig.mysqlDatabase,
     host : config.storeConfig.mysqlHost,
     dialect : config.storeConfig.storeDBMS,
     dialectOptions : {
-      requestTimeout : 3000
+      requestTimeout : 20000
     },
     port : config.storeConfig.mysqlPort,
     timezone : "+09:00",
